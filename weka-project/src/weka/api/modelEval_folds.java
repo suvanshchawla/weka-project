@@ -1,6 +1,5 @@
 package weka.api;
 
-import weka.core.Instance;
 import weka.core.Instances;
 
 import weka.attributeSelection.CfsSubsetEval;
@@ -10,9 +9,8 @@ import weka.filters.supervised.attribute.AttributeSelection;
 import weka.filters.Filter;
 import java.util.Random;
 import weka.core.converters.ConverterUtils.DataSource;
-import weka.core.SerializationHelper;
-import weka.filters.supervised.instance.StratifiedRemoveFolds;
 import weka.classifiers.Evaluation;
+import weka.filters.unsupervised.instance.RemovePercentage;
 
 import weka.classifiers.bayes.NaiveBayes;
 import weka.classifiers.functions.SMO;
@@ -53,17 +51,11 @@ public class modelEval_folds {
 		newData.setClassIndex(newData.numAttributes() - 1);
 
 		// Creating the split for training and testing
-		StratifiedRemoveFolds filter = new StratifiedRemoveFolds();
-		String[] options = new String[6];
+		RemovePercentage filter = new RemovePercentage();
 
-		options[0] = "-N"; // indicate we want to set the number of folds
-		options[1] = Integer.toString(5); // split the data into five random folds
-		options[2] = "-F"; // indicate we want to select a specific fold
-		options[3] = Integer.toString(1); // select the first fold
-		options[4] = "-S"; // indicate we want to set the random seed
-		options[5] = Integer.toString(1); // set the random seed to 1
 
-		filter.setOptions(options); // set the filter options
+
+		filter.setPercentage(70); // Removing 70% of the data
 		filter.setInputFormat(newData); // prepare the filter for the data format
 		filter.setInvertSelection(false); // do not invert the selection
 
@@ -71,9 +63,12 @@ public class modelEval_folds {
 		Instances test = Filter.useFilter(newData, filter);
 
 		// prepare and apply filter for training data here
+		filter.setInputFormat(newData); // prepare the filter for the data format
 		filter.setInvertSelection(true); // invert the selection to get other data
 		Instances train = Filter.useFilter(newData, filter);
+		
 
+		
 		// create and build the classifier - We can use different types of classifiers
 		J48 tree = new J48(); // It is an implementation of C4.5 algorithm in Java
 		tree.buildClassifier(train);
@@ -86,11 +81,26 @@ public class modelEval_folds {
 
 		RandomForest rf = new RandomForest();
 		rf.buildClassifier(train);
-
+		
+		Evaluation eval_model = new Evaluation(train);
+		
+		eval_model.evaluateModel(rf, test);
+		System.out.println("Correct % = " + eval_model.pctCorrect());
+		System.out.println("Incorrect % = " + eval_model.pctIncorrect());
+		System.out.println("AUC = " + eval_model.areaUnderROC(1));
+		System.out.println("kappa = " + eval_model.kappa());
+		System.out.println("MAE = " + eval_model.meanAbsoluteError());
+		System.out.println("RMSE = " + eval_model.rootMeanSquaredError());
+		System.out.println("RAE = " + eval_model.relativeAbsoluteError());
+		System.out.println("RRSE = " + eval_model.rootRelativeSquaredError());
+		System.out.println("Precision = " + eval_model.precision(1));
+		System.out.println("Recall = " + eval_model.recall(1));
+		System.out.println("fMeasure = " + eval_model.fMeasure(1));
+		System.out.println("Error Rate = " + eval_model.errorRate());
 
 		
 		int seed = 1;
-		int folds = 15;
+		int folds = 10;
 		
 		// randomize data
 		Random rand = new Random(seed);
@@ -113,20 +123,21 @@ public class modelEval_folds {
 			eval.evaluateModel(nb, test_set);
 
 			// output evaluation
-			System.out.println();
+			System.out.println("\n \n \n");
+//			*********Multiple Metrics can be shown, they just need to be uncommented***********
 			System.out.println(eval.toMatrixString("=== Confusion matrix for fold " + (n+1) + "/" + folds + " ===\n"));
-			System.out.println("Correct % = "+eval.pctCorrect());
-			System.out.println("Incorrect % = "+eval.pctIncorrect());
-			System.out.println("AUC = "+eval.areaUnderROC(1));
-			System.out.println("kappa = "+eval.kappa());
-			System.out.println("MAE = "+eval.meanAbsoluteError());
-			System.out.println("RMSE = "+eval.rootMeanSquaredError());
-			System.out.println("RAE = "+eval.relativeAbsoluteError());
-			System.out.println("RRSE = "+eval.rootRelativeSquaredError());
-			System.out.println("Precision = "+eval.precision(1));
-			System.out.println("Recall = "+eval.recall(1));
+//			System.out.println("Correct % = "+eval.pctCorrect());
+//			System.out.println("Incorrect % = "+eval.pctIncorrect());
+//			System.out.println("AUC = "+eval.areaUnderROC(1));
+//			System.out.println("kappa = "+eval.kappa());
+//			System.out.println("MAE = "+eval.meanAbsoluteError());
+//			System.out.println("RMSE = "+eval.rootMeanSquaredError());
+//			System.out.println("RAE = "+eval.relativeAbsoluteError());
+//			System.out.println("RRSE = "+eval.rootRelativeSquaredError());
+//			System.out.println("Precision = "+eval.precision(1));
+//			System.out.println("Recall = "+eval.recall(1));
 			System.out.println("fMeasure = "+eval.fMeasure(1));
-			System.out.println("Error Rate = "+eval.errorRate());
+//			System.out.println("Error Rate = "+eval.errorRate());
 			//the confusion matrix
 			//System.out.println(eval.toMatrixString("=== Overall Confusion Matrix ===\n"));
 		}
